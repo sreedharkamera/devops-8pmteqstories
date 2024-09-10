@@ -1,2 +1,98 @@
-i love my cn
-i can do 
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
+class ExtractionServiceTest {
+
+    @Mock
+    private AppConfig config;
+
+    @Mock
+    private AuditLogService logger;
+
+    @Mock
+    private BucketAccessService bucketAccessService;
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @InjectMocks
+    private ExtractionService extractionService;
+
+    @Mock
+    private Connection mockConnection;
+
+    @Mock
+    private PreparedStatement mockPreparedStatement;
+
+    @Mock
+    private ResultSet mockResultSet;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testExtractAndSendDataSuccess() throws Exception {
+        // Arrange
+        String eventId = "event123";
+        String batchId = "batch123";
+        EventType eventType = EventType.INSERT;
+        String region = "US";
+
+        String mockQuery = "SELECT * FROM transactions WHERE batchId = ? AND region = ?";
+
+        when(dbQueryExecutor.getDataSource()).thenReturn(mock(Connection.class));
+        when(mockConnection.prepareStatement(mockQuery)).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true).thenReturn(false);
+        when(mockResultSet.getString(anyString())).thenReturn("2023-09-10");
+
+        when(config.getTargetExportFolderPath()).thenReturn("/tmp/");
+        when(config.getFeedName()).thenReturn("TestFeed");
+        when(config.getFeedNarId()).thenReturn("Nar123");
+        when(config.getTransactionBusinessDateColumnName()).thenReturn("Business_Date");
+        when(config.getTransactionIdentifierColumnName()).thenReturn("Transaction_Identifier");
+        when(config.getRegionColumnName()).thenReturn("Region");
+
+        // Act
+        extractionService.extractAndSendData(eventId, batchId, eventType, region);
+
+        // Assert
+        verify(dbQueryExecutor, times(1)).getDataSource();
+        verify(mockPreparedStatement, times(1)).setString(1, batchId);
+        verify(mockPreparedStatement, times(1)).setString(2, region);
+        verify(mockPreparedStatement, times(1)).executeQuery();
+        verify(logger, times(1)).logAudit(anyString(), eq(EventStatus.SUCCESS));
+    }
+
+    @Test
+    void testExtractAndSendDataFailure() throws Exception {
+        // Arrange
+        String eventId = "event123";
+        String batchId = "batch123";
+        EventType eventType = EventType.INSERT;
+        String region = "US";
+
+        String mockQuery = "SELECT * FROM transactions WHERE batchId = ? AND region = ?";
+
+        when(dbQueryExecutor.getDataSource()).thenReturn(mock(Connection.class));
+        when(mockConnection.prepareStatement(mockQuery)).thenThrow(new RuntimeException("Database error"));
+
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            extractionService.extractAndSendData(eventId, batchId, eventType, region);
+        });
+
+        verify(logger, times(1)).logAudit(anyString(), eq(EventStatus.FAILED));
+        assertEquals("Database error", exception.getMessage());
+    }
+}
