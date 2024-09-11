@@ -1,0 +1,84 @@
+@RunWith(MockitoJUnitRunner.class)
+public class ExtractionServiceTest {
+
+    @Mock
+    private BucketAccessService bucketAccessService;
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @Mock
+    private AppConfig config;
+
+    @Mock
+    private AuditLogService logger;
+
+    @InjectMocks
+    private ExtractionService extractionService;
+
+    @Mock
+    private Connection mockConnection;
+
+    @Mock
+    private PreparedStatement mockPreparedStatement;
+
+    @Mock
+    private ResultSet mockResultSet;
+
+    @Before
+    public void setUp() throws Exception {
+        // Mock behavior of AppConfig
+        when(config.getTargetExportFolderPath()).thenReturn("some/folder/path");
+        when(config.getFeedName()).thenReturn("FeedName");
+        when(config.getFeedNarId()).thenReturn("FeedNarId");
+        when(config.getTransactionBusinessDateColumnName()).thenReturn("Business_Date");
+        when(config.getTransactionIdentifierColumnName()).thenReturn("Transaction_Identifier");
+        when(config.getTransactionSecondaryIdentifierColumnName()).thenReturn("Secondary_Identifier");
+        when(config.getRegionColumnName()).thenReturn("Country");
+        when(config.getWorkflowName(anyString())).thenReturn("WorkflowName");
+        when(config.getLegalEntityName(anyString())).thenReturn("LegalEntityName");
+
+        // Mock behavior of DatabaseQueryExecutor
+        when(dbQueryExecutor.getDataSource()).thenReturn(mock(SQLServerDataSource.class));
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+
+        // Mock behavior of ResultSet
+        when(mockResultSet.next()).thenReturn(true, false);
+        when(mockResultSet.getString(anyString())).thenReturn("TestValue");
+    }
+
+    @Test
+    public void testExtractAndSendData_success() throws Exception {
+        // Setup required parameters
+        String eventId = "event123";
+        String batchId = "batch123";
+        EventType eventType = EventType.INSERT;
+        String region = "Region1";
+
+        // Invoke the method
+        extractionService.extractAndSendData(eventId, batchId, eventType, region);
+
+        // Verify that the status was updated
+        verify(logger).log(anyString());
+        verify(dbQueryExecutor, times(1)).getDataSource();
+        verify(mockPreparedStatement, times(1)).executeQuery();
+
+        // Ensure resources were closed
+        verify(mockPreparedStatement, times(1)).close();
+        verify(mockConnection, times(1)).close();
+    }
+
+    @Test(expected = Exception.class)
+    public void testExtractAndSendData_failure() throws Exception {
+        // Setup to throw exception
+        when(mockPreparedStatement.executeQuery()).thenThrow(new SQLException("Test SQL Exception"));
+
+        // Invoke the method
+        extractionService.extractAndSendData("event123", "batch123", EventType.INSERT, "Region1");
+
+        // Verify that the error was logged and status updated
+        verify(logger).error(anyString(), any(Exception.class));
+        verify(mockConnection, times(1)).close();
+    }
+}
