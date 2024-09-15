@@ -38,4 +38,58 @@ public class ExtractionServiceTest {
         when(config.getTransactionExtractionQuery()).thenReturn("SELECT * FROM some_table WHERE batch_id = ? AND region = ?");
         when(config.getTempExportFileFolderPath()).thenReturn("/tmp/export/");
         when(config.getTargetExportFolderPath()).thenReturn("/target/export/");
-        when(config.getFeed
+        when(config.getFeedName()).thenReturn("feedName");
+        when(config.getFeedNarId()).thenReturn("feedNarId");
+        when(config.getTransactionBusinessDateColumnName()).thenReturn("business_date");
+        when(config.getTransactionIdentifierColumnName()).thenReturn("transaction_id");
+        when(config.getTransactionSecondaryIdentifierColumnName()).thenReturn("secondary_id");
+        when(config.getRegionColumnName()).thenReturn("region");
+        when(config.getWorkflowName(anyString())).thenReturn("workflow");
+        when(config.getLegalEntityName(anyString())).thenReturn("legalEntity");
+        when(config.getTargetExportSubFolderPath(anyString())).thenReturn("/target/subfolder/");
+        when(dbQueryExecutor.getDataSource()).thenReturn(mock(SQLServerDataSource.class));
+    }
+
+    @Test
+    void testExtractAndSendData_success() throws Exception {
+        // Arrange
+        Connection mockConnection = mock(Connection.class);
+        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+        ResultSet mockResultSet = mock(ResultSet.class);
+
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true).thenReturn(false); // Simulate one row in the result set
+        when(mockResultSet.getString("business_date")).thenReturn("2024-09-15");
+        when(mockResultSet.getString("transaction_id")).thenReturn("123");
+        when(mockResultSet.getString("secondary_id")).thenReturn("456");
+        when(dbQueryExecutor.getDataSource().getConnection()).thenReturn(mockConnection);
+
+        // Act
+        extractionService.extractAndSendData("eventId", "batchId", EventType.INSERT, "region");
+
+        // Assert
+        verify(logger, times(2)).info(anyString()); // Check logs for directory creation and file move
+        verify(dbQueryExecutor).executeUpdate(anyString()); // Check update execution
+    }
+
+    @Test
+    void testExtractAndSendData_noResults() throws Exception {
+        // Arrange
+        Connection mockConnection = mock(Connection.class);
+        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+        ResultSet mockResultSet = mock(ResultSet.class);
+
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(false); // Simulate no rows in the result set
+        when(dbQueryExecutor.getDataSource().getConnection()).thenReturn(mockConnection);
+
+        // Act
+        extractionService.extractAndSendData("eventId", "batchId", EventType.INSERT, "region");
+
+        // Assert
+        verify(logger, never()).info(anyString()); // No logging for empty results
+        verify(dbQueryExecutor, never()).executeUpdate(anyString()); // No update execution
+    }
+}

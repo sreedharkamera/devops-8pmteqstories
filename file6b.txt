@@ -70,4 +70,28 @@ public class ExtractionServiceTest {
 
         // Assert
         verify(logger, times(2)).info(anyString()); // Check logs for directory creation and file move
-        verify(dbQueryExecutor).executeUpd
+        verify(dbQueryExecutor).executeUpdate(anyString()); // Check DB updates
+        verify(bucketAccessService, times(1)).writeToBucket(anyString(), anyString(), anyString()); // Verify write to bucket was called
+    }
+
+    @Test
+    void testExtractAndSendData_failure() throws Exception {
+        // Arrange
+        Connection mockConnection = mock(Connection.class);
+        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenThrow(new SQLException("DB error"));
+        when(dbQueryExecutor.getDataSource().getConnection()).thenReturn(mockConnection);
+
+        // Act
+        Throwable thrown = catchThrowable(() -> {
+            extractionService.extractAndSendData("eventId", "batchId", EventType.INSERT, "region");
+        });
+
+        // Assert
+        assertThat(thrown).isInstanceOf(Exception.class).hasMessageContaining("DB error");
+        verify(logger).error(anyString(), any(Exception.class)); // Check error logging
+        verify(dbQueryExecutor).executeUpdate(anyString()); // Check DB update
+        verifyNoInteractions(bucketAccessService); // Verify bucket access service was not called
+    }
+}
