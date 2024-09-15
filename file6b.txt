@@ -1,0 +1,73 @@
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class ExtractionServiceTest {
+
+    @Mock
+    private AppConfig config;
+
+    @Mock
+    private AuditLogService logger;
+
+    @Mock
+    private BucketAccessService bucketAccessService;
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @InjectMocks
+    private ExtractionService extractionService;
+
+    @BeforeEach
+    void setUp() {
+        // Configure mocks as needed
+        when(config.getTransactionExtractionQuery()).thenReturn("SELECT * FROM some_table WHERE batch_id = ? AND region = ?");
+        when(config.getTempExportFileFolderPath()).thenReturn("/tmp/export/");
+        when(config.getTargetExportFolderPath()).thenReturn("/target/export/");
+        when(config.getFeedName()).thenReturn("feedName");
+        when(config.getFeedNarId()).thenReturn("feedNarId");
+        when(config.getTransactionBusinessDateColumnName()).thenReturn("business_date");
+        when(config.getTransactionIdentifierColumnName()).thenReturn("transaction_id");
+        when(config.getTransactionSecondaryIdentifierColumnName()).thenReturn("secondary_id");
+        when(config.getRegionColumnName()).thenReturn("region");
+        when(config.getWorkflowName(anyString())).thenReturn("workflow");
+        when(config.getLegalEntityName(anyString())).thenReturn("legalEntity");
+        when(config.getTargetExportSubFolderPath(anyString())).thenReturn("/target/subfolder/");
+        when(dbQueryExecutor.getDataSource()).thenReturn(mock(SQLServerDataSource.class));
+    }
+
+    @Test
+    void testExtractAndSendData_success() throws Exception {
+        // Arrange
+        Connection mockConnection = mock(Connection.class);
+        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+        ResultSet mockResultSet = mock(ResultSet.class);
+
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        when(mockResultSet.next()).thenReturn(true).thenReturn(false); // Simulate one row in the result set
+        when(mockResultSet.getString("business_date")).thenReturn("2024-09-15");
+        when(mockResultSet.getString("transaction_id")).thenReturn("123");
+        when(mockResultSet.getString("secondary_id")).thenReturn("456");
+        when(dbQueryExecutor.getDataSource().getConnection()).thenReturn(mockConnection);
+
+        // Act
+        extractionService.extractAndSendData("eventId", "batchId", EventType.INSERT, "region");
+
+        // Assert
+        verify(logger, times(2)).info(anyString()); // Check logs for directory creation and file move
+        verify(dbQueryExecutor).executeUpd

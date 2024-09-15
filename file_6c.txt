@@ -1,0 +1,41 @@
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+public class ExtractionServiceTest {
+
+    @Mock
+    private AppConfig config;
+
+    @Mock
+    private AuditLogService logger;
+
+    @Mock
+    private BucketAccessService bucketAccessService;
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @InjectMocks
+    private ExtractionService extractionService;
+
+    @BeforeEach
+    void setUp() {
+        // Configure mocks as needed
+        when(config.getTransactionExtractionQuery()).thenReturn("SELECT * FROM some_table WHERE batch_id = ? AND region = ?");
+        when(config.getTempExportFileFolderPath()).thenReturn("/tmp/export/");
+        when(config.getTargetExportFolderPath()).thenReturn("/target/export/");
+        when(config.getFeed
