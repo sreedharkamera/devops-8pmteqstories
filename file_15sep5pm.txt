@@ -1,0 +1,115 @@
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
+
+import org.apache.avro.Schema;
+import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.io.DatumWriter;
+import org.apache.avro.io.DataFileWriter;
+import org.apache.avro.io.EncoderFactory;
+import org.apache.avro.generic.GenericDatumWriter;
+import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSourceFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.Date;
+
+@ExtendWith(MockitoExtension.class)
+public class ExtractionServiceTest {
+
+    @Mock
+    private AppConfig config;
+
+    @Mock
+    private AuditLogService logger;
+
+    @Mock
+    private BucketAccessService bucketAccessService;
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @InjectMocks
+    private ExtractionService extractionService;
+
+    @BeforeEach
+    public void setup() {
+        // Initialize any required setup here if needed
+    }
+
+    @Test
+    public void testExtractAndSendDataSuccess() throws Exception {
+        String eventId = "event123";
+        String batchId = "batch123";
+        String region = "us-east-1";
+        EventType eventType = EventType.INSERT;
+
+        // Mocking AppConfig methods
+        when(config.getTransactionBusinessDateColumnName()).thenReturn("business_date");
+        when(config.getTransactionIdentifierColumnName()).thenReturn("transaction_id");
+        when(config.getTransactionSecondaryIdentifierColumnName()).thenReturn("secondary_id");
+        when(config.getRegionColumnName()).thenReturn("region");
+        when(config.getTargetExportFolderPath()).thenReturn("/target/path");
+        when(config.getFeedName()).thenReturn("feed_name");
+        when(config.getFeedNarId()).thenReturn("feed_nar_id");
+        when(config.getWorkflowName(any())).thenReturn("workflow_name");
+        when(config.getLegalEntityName(any())).thenReturn("legal_entity_name");
+
+        // Mock DatabaseQueryExecutor to return a mock data source
+        SQLServerDataSource mockDataSource = mock(SQLServerDataSource.class);
+        Connection mockConnection = mock(Connection.class);
+        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
+        ResultSet mockResultSet = mock(ResultSet.class);
+        when(dbQueryExecutor.getDataSource()).thenReturn(mockDataSource);
+        when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        when(mockConnection.prepareStatement(any(String.class))).thenReturn(mockPreparedStatement);
+        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+
+        // Mock ResultSet behavior
+        when(mockResultSet.next()).thenReturn(true, false);
+        when(mockResultSet.getString(any())).thenReturn("mock_value");
+
+        // Mock methods for file operations
+        File file = mock(File.class);
+        DataFileWriter<GenericRecord> mockDataFileWriter = mock(DataFileWriter.class);
+        when(mockDataFileWriter.create(any(Schema.class), any(File.class))).thenReturn(mockDataFileWriter);
+
+        // Execute the method
+        extractionService.extractAndSendData(eventId, batchId, eventType, region);
+
+        // Verify interactions and state
+        verify(mockPreparedStatement).setString(1, batchId);
+        verify(mockPreparedStatement).setString(2, region);
+        verify(mockResultSet).close();
+        verify(mockDataFileWriter).close();
+        verify(bucketAccessService, times(1)).writeExportToGCPBucket(any(), any(), any());
+        verify(logger).logEvent(any(), eq(EventType.INSERT));
+        verify(logger).updateEventEntryStatus(eventId, EventStatus.SUCCESS);
+    }
+
+    @Test
+    public void testExtractAndSendDataFailure() throws Exception {
+        // Similar setup as above but mock to throw an exception
+        doThrow(new RuntimeException("Database error")).when(dbQueryExecutor).getDataSource();
+
+        // Execute the method and expect an exception
+        Exception exception = assertThrows(Exception.class, () -> {
+            extractionService.extractAndSendData("event123", "batch123", EventType.INSERT, "us-east-1");
+        });
+
+        // Verify the status update in case of failure
+        verify(logger).updateEventEntryStatus("event123", EventStatus.FAILED);
+    }
+}
