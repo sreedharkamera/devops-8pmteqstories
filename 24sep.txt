@@ -1,0 +1,115 @@
+import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class ExportEventPollServiceTest {
+
+    @Mock
+    private DatabaseQueryExecutor dbQueryExecutor;
+
+    @Mock
+    private ExtractionService extractionService;
+
+    @Mock
+    private AppConfig appConfig;
+
+    @Mock
+    private AuditLogService logger;
+
+    @InjectMocks
+    private ExportEventPollService exportEventPollService;
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void testObtainEventEntriesThatCanBeProcessed() throws SQLException {
+        // Mock AppConfig to return a query
+        String expectedQuery = "SELECT * FROM export_event WHERE status = 'PENDING'";
+        when(appConfig.getPollingControlTableQuery()).thenReturn(expectedQuery);
+
+        // Prepare mock data for DatabaseQueryExecutor
+        List<RowValues> mockRows = new ArrayList<>();
+        Map<String, String> rowData = new HashMap<>();
+        rowData.put("EVENT_ID", "123");
+        rowData.put("BATCH_ID", "batch-1");
+        rowData.put("REGION_ISO", "US");
+        rowData.put("EVENT_TYPE", "I");
+        RowValues rowValue = new RowValues(rowData);
+        mockRows.add(rowValue);
+        
+        // Mock the query execution
+        when(dbQueryExecutor.executeQuery(expectedQuery)).thenReturn(mockRows);
+
+        // Call the method and verify the result
+        List<RowValues> result = exportEventPollService.obtainEventEntriesThatCanBeProcessed();
+        assertEquals(1, result.size());
+        assertEquals("123", result.get(0).getColumnValue("EVENT_ID"));
+        assertEquals("batch-1", result.get(0).getColumnValue("BATCH_ID"));
+    }
+
+    @Test
+    void testStartExtractionForEntry() {
+        // Mock RowValues entry
+        Map<String, String> rowData = new HashMap<>();
+        rowData.put("EVENT_ID", "123");
+        rowData.put("BATCH_ID", "batch-1");
+        rowData.put("REGION_ISO", "US");
+        rowData.put("EVENT_TYPE", "I");
+        RowValues entry = new RowValues(rowData);
+
+        // Test the method
+        exportEventPollService.startExtractionForEntry(entry);
+
+        // Verify the interaction with extractionService
+        verify(extractionService).extractAndSendData("123", "batch-1", EventType.INSERT, "US");
+    }
+
+    @Test
+    void testObtainEventTypeForEntry_InsertType() {
+        Map<String, String> rowData = new HashMap<>();
+        rowData.put("EVENT_TYPE", "I");
+        RowValues entry = new RowValues(rowData);
+
+        EventType eventType = exportEventPollService.obtainEventTypeForEntry(entry);
+
+        assertEquals(EventType.INSERT, eventType);
+    }
+
+    @Test
+    void testObtainEventTypeForEntry_DeleteType() {
+        Map<String, String> rowData = new HashMap<>();
+        rowData.put("EVENT_TYPE", "D");
+        RowValues entry = new RowValues(rowData);
+
+        EventType eventType = exportEventPollService.obtainEventTypeForEntry(entry);
+
+        assertEquals(EventType.DELETE, eventType);
+    }
+
+    @Test
+    void testWaitUntilNextPollRun() throws InterruptedException {
+        // Mock AppConfig to return a sleep interval
+        when(appConfig.getPollingSleepIntervalMinutes()).thenReturn(1L);
+
+        // Call the method
+        exportEventPollService.waitUntilNextPollRun();
+
+        // Since Thread.sleep is called inside, we can't directly verify it, 
+        // but no exceptions should occur
+        verify(appConfig).getPollingSleepIntervalMinutes();
+    }
+}
