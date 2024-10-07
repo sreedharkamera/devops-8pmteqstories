@@ -1,0 +1,128 @@
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+class AddRecordControllerTest {
+
+    private AddRecordController addRecordController;
+    private Context mockContext;
+    private PageModel mockModel;
+    private HttpServletRequest mockRequest;
+    private SubpoenaFileUploadDAO mockFileUploadDAO;
+
+    @BeforeEach
+    void setUp() {
+        addRecordController = new AddRecordController();
+        mockContext = mock(Context.class);
+        mockModel = mock(PageModel.class);
+        mockRequest = mock(HttpServletRequest.class);
+        mockFileUploadDAO = mock(SubpoenaFileUploadDAO.class);
+        
+        when(mockContext.getServletRequest()).thenReturn(mockRequest);
+    }
+
+    @Test
+    void testPreparePageModel_SuccessfulCase() throws Exception {
+        // Arrange
+        when(mockRequest.getParameter("Case_Id")).thenReturn("123");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDID)).thenReturn("456");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDTYPE)).thenReturn("SomeType");
+        when(mockFileUploadDAO.getInvestigationType(mockContext, "123")).thenReturn(List.of("Type1", "Type2", "Type3", "California"));
+        when(mockFileUploadDAO.checkIsCaseValidAddRec(mockContext, "123")).thenReturn("Valid");
+        when(mockFileUploadDAO.validateGroup(any())).thenReturn(true);
+
+        // Act
+        addRecordController.preparePageModel(mockContext, mockModel);
+
+        // Assert
+        verify(mockModel).setValue("Case_Id", "123");
+        verify(mockModel).setValue(Constants.STATE_NAME, "California");
+        verify(mockModel).setValue(Constants.J_TO_VTL_RECORDID, 456);
+        verify(mockModel).setValue(Constants.J_TO_VTL_RECORDTYPE, "SomeType");
+        verify(mockModel).setValue(Constants.SBPN_ALLOWED_GROUPS, true);
+        verify(mockModel).setTitle(Constants.WINDOW_TITLE_ADD);
+    }
+
+    @Test
+    void testPreparePageModel_InvalidCase() throws Exception {
+        // Arrange
+        when(mockRequest.getParameter("Case_Id")).thenReturn("123");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDID)).thenReturn("456");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDTYPE)).thenReturn("SomeType");
+        when(mockFileUploadDAO.getInvestigationType(mockContext, "123")).thenReturn(List.of("Type1", "Type2", "Type3", "California"));
+        when(mockFileUploadDAO.checkIsCaseValidAddRec(mockContext, "123")).thenReturn("Invalid Case");
+        
+        Map<String, Object> params = new HashMap<>();
+        doNothing().when(mockContext).forward(anyString(), anyString(), anyMap());
+
+        // Act
+        addRecordController.preparePageModel(mockContext, mockModel);
+
+        // Assert
+        ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(mockContext).forward(eq("subpoena ImportExtension"), eq("subPoena ImportExceptionPage"), paramsCaptor.capture());
+        
+        Map<String, Object> capturedParams = paramsCaptor.getValue();
+        assertEquals(Constants.FILE_PROCESSING_FAILED, capturedParams.get(Constants.FILE_PROCESSING_STATUS));
+        assertEquals("Authorization error", capturedParams.get("Message_Output"));
+        assertEquals("Invalid Case", capturedParams.get("validationErrors"));
+    }
+
+    @Test
+    void testPreparePageModel_GroupNotAllowed() throws Exception {
+        // Arrange
+        when(mockRequest.getParameter("Case_Id")).thenReturn("123");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDID)).thenReturn("456");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDTYPE)).thenReturn("SomeType");
+        when(mockFileUploadDAO.getInvestigationType(mockContext, "123")).thenReturn(List.of("Type1", "Type2", "Type3", "California"));
+        when(mockFileUploadDAO.checkIsCaseValidAddRec(mockContext, "123")).thenReturn("Valid");
+        when(mockFileUploadDAO.validateGroup(any())).thenReturn(false);
+
+        // Act
+        addRecordController.preparePageModel(mockContext, mockModel);
+
+        // Assert
+        verify(mockModel).setValue(Constants.SBPN_ALLOWED_GROUPS, false);
+    }
+
+    @Test
+    void testPreparePageModel_ExceptionHandling() throws Exception {
+        // Arrange
+        when(mockRequest.getParameter("Case_Id")).thenThrow(new RuntimeException("Error"));
+
+        // Act
+        addRecordController.preparePageModel(mockContext, mockModel);
+
+        // Assert
+        verify(mockModel).setTitle(Constants.WINDOW_TITLE_ADD);
+        // Verify that the logger is called with the expected error message
+        // You would need a logger mock to check this if necessary
+    }
+
+    @Test
+    void testPreparePageModel_RecordIdAndTypeNull() throws Exception {
+        // Arrange
+        when(mockRequest.getParameter("Case_Id")).thenReturn("123");
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDID)).thenReturn(null);
+        when(mockRequest.getParameter(Constants.P_TO_P_RECORDTYPE)).thenReturn(null);
+        when(mockFileUploadDAO.getInvestigationType(mockContext, "123")).thenReturn(List.of("Type1", "Type2", "Type3", "California"));
+        when(mockFileUploadDAO.checkIsCaseValidAddRec(mockContext, "123")).thenReturn("Valid");
+        when(mockFileUploadDAO.validateGroup(any())).thenReturn(true);
+
+        // Act
+        addRecordController.preparePageModel(mockContext, mockModel);
+
+        // Assert
+        verify(mockModel, never()).setValue(Constants.J_TO_VTL_RECORDID, anyInt());
+        verify(mockModel, never()).setValue(Constants.J_TO_VTL_RECORDTYPE, anyString());
+    }
+}
