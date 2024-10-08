@@ -1,0 +1,84 @@
+import static org.mockito.Mockito.*;
+import static org.junit.Assert.*;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class AddRecordControllerTest {
+
+    private AddRecordController controller;
+    private Context mockContext;
+    private PageModel mockModel;
+    private AddRecordDAO mockAddRecordDAO;
+    private SubpoenaFileUploadDAO mockSubpoenaFileUploadDAO;
+
+    @Before
+    public void setUp() {
+        controller = new AddRecordController();
+        mockContext = mock(Context.class);
+        mockModel = mock(PageModel.class);
+        mockAddRecordDAO = mock(AddRecordDAO.class);
+        mockSubpoenaFileUploadDAO = mock(SubpoenaFileUploadDAO.class);
+        
+        // You would need to inject these mocks into your controller if they are not created within the method
+        // For example, you could modify the controller to accept them via constructor or setter
+    }
+
+    @Test
+    public void testHandleSubmit_Success() throws PluginException {
+        // Arrange
+        when(mockSubpoenaFileUploadDAO.getLastRecordId(mockContext)).thenReturn(1);
+        doNothing().when(mockAddRecordDAO).insertIntoIndividual(anyList(), any(Context.class), any(PageModel.class));
+
+        // Setting fields directly on the controller for the test
+        controller.Record_Type = "Individual";
+        controller.Case_Id = "case123";
+        controller.Search_Start_Date = "2023-01-01";
+        controller.Search_End_Date = "2023-12-31";
+        controller.Date_Of_Birth = "1990-01-01";
+        controller.Last_Name = "Doe";
+        controller.First_Name = "John";
+        controller.Middle_Name = "A";
+        controller.ID = "ID123";
+        controller.TIN_SSN_Number = "123-45-6789";
+        controller.Suffix = "Jr.";
+        controller.street = "123 Main St";
+        controller.city = "Anytown";
+        controller.state = "NY";
+        controller.zip = "12345";
+        controller.country = "USA";
+        controller.phone = "555-1234";
+        controller.email = "john.doe@example.com";
+
+        // Act
+        controller.handleSubmit(mockContext, mockModel);
+
+        // Assert
+        ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+        verify(mockContext).forward(eq("subpoenaImportExtension"), eq("subPoenaImportExceptionPage"), anyMap());
+        verify(mockModel).setValue("SAVE_STATUS", "FAILURE");
+    }
+
+    @Test
+    public void testHandleSubmit_Exception() throws PluginException {
+        // Arrange
+        when(mockSubpoenaFileUploadDAO.getLastRecordId(mockContext)).thenThrow(new RuntimeException("Database error"));
+
+        // Setting fields directly on the controller for the test
+        controller.Record_Type = "Individual";
+        // ... (set other fields as needed)
+
+        // Act
+        controller.handleSubmit(mockContext, mockModel);
+
+        // Assert
+        ArgumentCaptor<Map<String, Object>> captor = ArgumentCaptor.forClass(Map.class);
+        verify(mockContext).forward(eq("subpoenaImportExtension"), eq("subPoenaImportExceptionPage"), captor.capture());
+        assertEquals("Records not added", captor.getValue().get("Message_Output"));
+        assertEquals("Exception occurred during addition of Individual records.", captor.getValue().get("validationErrors"));
+        verify(mockModel).setValue("SAVE_STATUS", "FAILURE");
+    }
+}
