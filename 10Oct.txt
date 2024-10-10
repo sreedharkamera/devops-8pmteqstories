@@ -1,0 +1,130 @@
+chatgpt
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.io.InputStream;
+import java.util.Properties;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+public class AddRecordDAOTest {
+
+    private AddRecordDAO addRecordDAO;
+    private PropertiesFile propertiesFileMock;
+
+    @BeforeEach
+    public void setUp() {
+        // Create a mock of PropertiesFile
+        propertiesFileMock = mock(PropertiesFile.class);
+
+        // Create a Properties object to return when initializeProperties is called
+        Properties mockProperties = new Properties();
+        mockProperties.setProperty("someKey", "someValue");
+
+        // Stubbing the initializeProperties method
+        when(propertiesFileMock.initializeProperties()).thenReturn(mockProperties);
+
+        // Inject the mock into AddRecordDAO using reflection or modify the constructor to accept a PropertiesFile
+        addRecordDAO = new AddRecordDAO(propertiesFileMock);
+    }
+
+    @Test
+    public void testAddRecordDAOInitialization() {
+        assertNotNull(addRecordDAO, "AddRecordDAO should be initialized properly.");
+    }
+
+    @Test
+    public void testPropertiesAreLoaded() {
+        Properties properties = propertiesFileMock.initializeProperties();
+        assertNotNull(properties, "Properties should not be null.");
+        assertEquals("someValue", properties.getProperty("someKey"), "The property should be loaded correctly.");
+    }
+
+    // Additional test cases can be added here to test other functionalities of AddRecordDAO
+
+}
+====copilot==
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import java.util.Properties;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
+
+public class AddRecordDAOTest {
+
+    private AddRecordDAO addRecordDAO;
+    private PropertiesFile mockPropertiesFile;
+    private Properties mockProperties;
+
+    @BeforeEach
+    public void setUp() {
+        mockPropertiesFile = mock(PropertiesFile.class);
+        mockProperties = mock(Properties.class);
+        
+        when(mockPropertiesFile.initializeProperties()).thenReturn(mockProperties);
+
+        addRecordDAO = new AddRecordDAO();
+        addRecordDAO.propFile = mockPropertiesFile; // Injecting the mock
+        addRecordDAO.prop = mockProperties; // Injecting the mock
+    }
+
+    @Test
+    public void testAddRecordDAOInitialization() {
+        // Verify that initializeProperties is called during AddRecordDAO construction
+        verify(mockPropertiesFile).initializeProperties();
+        // Assert that the properties are not null
+        assertNotNull(addRecordDAO.prop);
+    }
+}
+===block
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+public class AddRecordDAOTest {
+
+    private AddRecordDAO addRecordDAO;
+
+    @Before
+    public void setup() {
+        addRecordDAO = new AddRecordDAO();
+    }
+
+    @Test
+    public void testAddRecordDAOInitialization() {
+        // Verify that the AddRecordDAO object is initialized correctly
+        assertNotNull(addRecordDAO);
+        assertNotNull(addRecordDAO.propFile);
+        assertNotNull(addRecordDAO.prop);
+    }
+
+    @Test
+    public void testPropertiesFileInitialization() {
+        // Verify that the PropertiesFile object is initialized correctly
+        PropertiesFile propFile = new PropertiesFile();
+        Properties prop = propFile.initializeProperties();
+        assertNotNull(prop);
+        assertTrue(prop.size() > 0);
+    }
+
+    @Test
+    public void testPropertiesLoading() {
+        // Verify that the properties are loaded correctly from the config file
+        Properties prop = addRecordDAO.prop;
+        assertNotNull(prop);
+        assertTrue(prop.containsKey("some.key")); // Replace with a key from your config file
+    }
+
+    @Test(expected = IOException.class)
+    public void testPropertiesLoadingError() {
+        // Verify that an IOException is thrown when there's an error loading the properties file
+        PropertiesFile propFile = new PropertiesFile();
+        propFile.initializeProperties(); // Simulate an error by deleting the config file or making it unreadable
+    }
+}
