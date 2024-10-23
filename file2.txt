@@ -1,1 +1,206 @@
 anything for new
+
+
+public class EntityTest {
+
+    private Entity entity;
+
+    @BeforeEach
+    public void setUp() {
+        entity = new Entity();
+    }
+
+    @Test
+    public void testSetAndGetRECORD_ID() {
+        entity.setRECORD_ID(123);
+        assertEquals(123, entity.getRECORD_ID());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_NUMBER() {
+        entity.setRECORD_NUMBER(5);
+        assertEquals(5, entity.getRECORD_NUMBER());
+    }
+
+    @Test
+    public void testSetAndGetSP_ITEM_ID() {
+        entity.setSP_ITEM_ID("SP123");
+        assertEquals("SP123", entity.getSP_ITEM_ID());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_TYPE() {
+        entity.setRECORD_TYPE("Type1");
+        assertEquals("Type1", entity.getRECORD_TYPE());
+    }
+
+    @Test
+    public void testSetAndGetTRACKING_NUMBER() {
+        entity.setTRACKING_NUMBER("TN123");
+        assertEquals("TN123", entity.getTRACKING_NUMBER());
+    }
+
+    @Test
+    public void testSetAndGetSEARCH_START_DATE() {
+        entity.setSEARCH_START_DATE("2024-01-01");
+        assertEquals("2024-01-01", entity.getSEARCH_START_DATE());
+    }
+
+    @Test
+    public void testSetAndGetSEARCH_END_DATE() {
+        entity.setSEARCH_END_DATE("2024-12-31");
+        assertEquals("2024-12-31", entity.getSEARCH_END_DATE());
+    }
+
+    @Test
+    public void testSetAndGetENTITY_NAME() {
+        entity.setENTITY_NAME("Entity Name");
+        assertEquals("Entity Name", entity.getENTITY_NAME());
+    }
+
+    @Test
+    public void testSetAndGetTIN_SSN_NUMBER() {
+        entity.setTIN_SSN_NUMBER("123-45-6789");
+        assertEquals("123-45-6789", entity.getTIN_SSN_NUMBER());
+    }
+
+    @Test
+    public void testSetAndGetSTREET() {
+        entity.setSTREET("123 Main St");
+        assertEquals("123 Main St", entity.getSTREET());
+    }
+
+    @Test
+    public void testSetAndGetCITY() {
+        entity.setCITY("New York");
+        assertEquals("New York", entity.getCITY());
+    }
+
+    @Test
+    public void testSetAndGetSTATE() {
+        entity.setSTATE("NY");
+        assertEquals("NY", entity.getSTATE());
+    }
+
+    @Test
+    public void testSetAndGetZIP() {
+        entity.setZIP("10001");
+        assertEquals("10001", entity.getZIP());
+    }
+
+    @Test
+    public void testSetAndGetCOUNTRY() {
+        entity.setCOUNTRY("USA");
+        assertEquals("USA", entity.getCOUNTRY());
+    }
+
+    @Test
+    public void testSetAndGetPHONE() {
+        entity.setPHONE("123-456-7890");
+        assertEquals("123-456-7890", entity.getPHONE());
+    }
+
+    @Test
+    public void testSetAndGetEMAIL() {
+        entity.setEMAIL("test@example.com");
+        assertEquals("test@example.com", entity.getEMAIL());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_DATE() {
+        entity.setRECORD_DATE("2024-10-23");
+        assertEquals("2024-10-23", entity.getRECORD_DATE());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_STATUS() {
+        entity.setRECORD_STATUS("Active");
+        assertEquals("Active", entity.getRECORD_STATUS());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_COUNT() {
+        entity.setRECORD_COUNT(10);
+        assertEquals(10, entity.getRECORD_COUNT());
+    }
+
+    @Test
+    public void testSetAndGetPROCESS_START_TIME() {
+        entity.setPROCESS_START_TIME("10:00 AM");
+        assertEquals("10:00 AM", entity.getPROCESS_START_TIME());
+    }
+
+    @Test
+    public void testSetAndGetPROCESS_END_TIME() {
+        entity.setPROCESS_END_TIME("11:00 AM");
+        assertEquals("11:00 AM", entity.getPROCESS_END_TIME());
+    }
+
+    @Test
+    public void testSetAndGetROW_NUMBER() {
+        entity.setROW_NUMBER(1);
+        assertEquals(1, entity.getROW_NUMBER());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_ID_FLAG() {
+        entity.setRECORD_ID_FLAG(true);
+        assertTrue(entity.isRECORD_ID_FLAG());
+    }
+
+    @Test
+    public void testSetAndGetSEARCH_TERM() {
+        entity.setSEARCH_TERM("SearchTerm");
+        assertEquals("SearchTerm", entity.getSEARCH_TERM());
+    }
+
+    @Test
+    public void testSetAndGetHIST_SEARCH_TERM_WLDCRD() {
+        entity.setHIST_SEARCH_TERM_WLDCRD("Wildcard");
+        assertEquals("Wildcard", entity.getHIST_SEARCH_TERM_WLDCRD());
+    }
+
+    @Test
+    public void testSetAndGetHIST_SEARCH_TERM_UNDRSCR() {
+        entity.setHIST_SEARCH_TERM_UNDRSCR("Underscore");
+        assertEquals("Underscore", entity.getHIST_SEARCH_TERM_UNDRSCR());
+    }
+
+    @Test
+    public void testSetAndGetHIST_SEARCH_TERM_EXACT() {
+        entity.setHIST_SEARCH_TERM_EXACT("ExactMatch");
+        assertEquals("ExactMatch", entity.getHIST_SEARCH_TERM_EXACT());
+    }
+
+    @Test
+    public void testEquals() {
+        Entity anotherEntity = new Entity();
+        anotherEntity.setRECORD_ID(1);
+        entity.setRECORD_ID(1);
+        assertEquals(entity, anotherEntity);
+    }
+
+    @Test
+    public void testNotEquals() {
+        Entity anotherEntity = new Entity();
+        anotherEntity.setRECORD_ID(2);
+        entity.setRECORD_ID(1);
+        assertNotEquals(entity, anotherEntity);
+    }
+
+    @Test
+    public void testHashCode() {
+        entity.setRECORD_ID(1);
+        entity.setENTITY_NAME("Test Entity");
+        int expectedHashCode = Objects.hash(/* relevant fields */);
+        assertEquals(expectedHashCode, entity.hashCode());
+    }
+
+    @Test
+    public void testToString() {
+        entity.setRECORD_ID(1);
+        entity.setENTITY_NAME("Test Entity");
+        String expectedString = "Entity [RECORD_ID=1, RECORD_NUMBER=1, SP_ITEM_ID=null, RECORD_TYPE=null, TRACKING_NUMBER=, SEARCH_START_DATE=null, SEARCH_END_DATE=null, ENTITY_NAME=Test Entity, TIN_SSN_NUMBER=null, STREET=null, CITY=null, STATE=null, ZIP=null, COUNTRY=null, PHONE=null, EMAIL=null, RECORD_DATE=null, RECORD_STATUS=null, RECORD_COUNT=0, PROCESS_START_TIME=null, PROCESS_END_TIME=null, ROW_NUMBER=0, RECORD_ID_FLAG=false, SEARCH_TERM=null, HIST_SEARCH_TERM_WLDCRD=null, HIST_SEARCH_TERM_UNDRSCR=null, HIST_SEARCH_TERM_EXACT=null]";
+        assertEquals(expectedString, entity.toString());
+    }
+}
