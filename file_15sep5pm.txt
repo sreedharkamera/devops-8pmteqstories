@@ -1,115 +1,103 @@
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
 
-import org.apache.avro.Schema;
-import org.apache.avro.generic.GenericData;
-import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.DataFileWriter;
-import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.generic.GenericDatumWriter;
-import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.commons.dbcp2.BasicDataSourceFactory;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.Date;
+public class VesselTest {
 
-@ExtendWith(MockitoExtension.class)
-public class ExtractionServiceTest {
+    @Test
+    public void testGettersAndSetters() {
+        Vessel vessel = new Vessel();
+        
+        vessel.setRECORD_ID(1);
+        assertEquals(1, vessel.getRECORD_ID());
 
-    @Mock
-    private AppConfig config;
+        vessel.setRECORD_NUMBER(2);
+        assertEquals(2, vessel.getRECORD_NUMBER());
 
-    @Mock
-    private AuditLogService logger;
+        vessel.setRECORD_TYPE("TypeA");
+        assertEquals("TypeA", vessel.getRECORD_TYPE());
 
-    @Mock
-    private BucketAccessService bucketAccessService;
+        vessel.setTRACKING_NUMBER("TRACK123");
+        assertEquals("TRACK123", vessel.getTRACKING_NUMBER());
 
-    @Mock
-    private DatabaseQueryExecutor dbQueryExecutor;
+        vessel.setSEARCH_START_DATE("2023-01-01");
+        assertEquals("2023-01-01", vessel.getSEARCH_START_DATE());
 
-    @InjectMocks
-    private ExtractionService extractionService;
+        vessel.setSEARCH_END_DATE("2023-12-31");
+        assertEquals("2023-12-31", vessel.getSEARCH_END_DATE());
 
-    @BeforeEach
-    public void setup() {
-        // Initialize any required setup here if needed
+        vessel.setVESSEL_NAME("VesselName");
+        assertEquals("VesselName", vessel.getVESSEL_NAME());
+
+        vessel.setVESSEL_NUMBER("VesselNumber");
+        assertEquals("VesselNumber", vessel.getVESSEL_NUMBER());
+
+        vessel.setRECORD_DATE("2023-01-01");
+        assertEquals("2023-01-01", vessel.getRECORD_DATE());
+
+        vessel.setRECORD_STATUS("Active");
+        assertEquals("Active", vessel.getRECORD_STATUS());
+
+        vessel.setRECORD_COUNT(1);
+        assertEquals(1, vessel.getRECORD_COUNT());
+
+        vessel.setPROCESS_START_TIME("10:00 AM");
+        assertEquals("10:00 AM", vessel.getPROCESS_START_TIME());
+
+        vessel.setPROCESS_END_TIME("11:00 AM");
+        assertEquals("11:00 AM", vessel.getPROCESS_END_TIME());
+
+        vessel.setRECORD_ID_FLAG(true);
+        assertTrue(vessel.isRECORD_ID_FLAG());
+
+        vessel.setSEARCH_TERM("SearchTerm");
+        assertEquals("SearchTerm", vessel.getSEARCH_TERM());
+
+        vessel.setHIST_SEARCH_TERM_WLDCRD("WildCard");
+        assertEquals("WildCard", vessel.getHIST_SEARCH_TERM_WLDCRD());
+
+        vessel.setHIST_SEARCH_TERM_UNDRSCR("Underscore");
+        assertEquals("Underscore", vessel.getHIST_SEARCH_TERM_UNDRSCR());
+
+        vessel.setHIST_SEARCH_TERM_EXACT("ExactMatch");
+        assertEquals("ExactMatch", vessel.getHIST_SEARCH_TERM_EXACT());
     }
 
     @Test
-    public void testExtractAndSendDataSuccess() throws Exception {
-        String eventId = "event123";
-        String batchId = "batch123";
-        String region = "us-east-1";
-        EventType eventType = EventType.INSERT;
+    public void testEqualsAndHashCode() {
+        Vessel vessel1 = new Vessel();
+        Vessel vessel2 = new Vessel();
 
-        // Mocking AppConfig methods
-        when(config.getTransactionBusinessDateColumnName()).thenReturn("business_date");
-        when(config.getTransactionIdentifierColumnName()).thenReturn("transaction_id");
-        when(config.getTransactionSecondaryIdentifierColumnName()).thenReturn("secondary_id");
-        when(config.getRegionColumnName()).thenReturn("region");
-        when(config.getTargetExportFolderPath()).thenReturn("/target/path");
-        when(config.getFeedName()).thenReturn("feed_name");
-        when(config.getFeedNarId()).thenReturn("feed_nar_id");
-        when(config.getWorkflowName(any())).thenReturn("workflow_name");
-        when(config.getLegalEntityName(any())).thenReturn("legal_entity_name");
+        vessel1.setRECORD_ID(1);
+        vessel2.setRECORD_ID(1);
 
-        // Mock DatabaseQueryExecutor to return a mock data source
-        SQLServerDataSource mockDataSource = mock(SQLServerDataSource.class);
-        Connection mockConnection = mock(Connection.class);
-        PreparedStatement mockPreparedStatement = mock(PreparedStatement.class);
-        ResultSet mockResultSet = mock(ResultSet.class);
-        when(dbQueryExecutor.getDataSource()).thenReturn(mockDataSource);
-        when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(any(String.class))).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
+        assertEquals(vessel1, vessel2);
+        assertEquals(vessel1.hashCode(), vessel2.hashCode());
 
-        // Mock ResultSet behavior
-        when(mockResultSet.next()).thenReturn(true, false);
-        when(mockResultSet.getString(any())).thenReturn("mock_value");
+        vessel2.setVESSEL_NAME("VesselName");
+        vessel1.setVESSEL_NAME("VesselName");
 
-        // Mock methods for file operations
-        File file = mock(File.class);
-        DataFileWriter<GenericRecord> mockDataFileWriter = mock(DataFileWriter.class);
-        when(mockDataFileWriter.create(any(Schema.class), any(File.class))).thenReturn(mockDataFileWriter);
+        assertEquals(vessel1, vessel2);
+        assertEquals(vessel1.hashCode(), vessel2.hashCode());
 
-        // Execute the method
-        extractionService.extractAndSendData(eventId, batchId, eventType, region);
+        vessel2.setVESSEL_NUMBER("VesselNumber");
+        vessel1.setVESSEL_NUMBER("DifferentNumber");
 
-        // Verify interactions and state
-        verify(mockPreparedStatement).setString(1, batchId);
-        verify(mockPreparedStatement).setString(2, region);
-        verify(mockResultSet).close();
-        verify(mockDataFileWriter).close();
-        verify(bucketAccessService, times(1)).writeExportToGCPBucket(any(), any(), any());
-        verify(logger).logEvent(any(), eq(EventType.INSERT));
-        verify(logger).updateEventEntryStatus(eventId, EventStatus.SUCCESS);
+        assertNotEquals(vessel1, vessel2);
+        assertNotEquals(vessel1.hashCode(), vessel2.hashCode());
     }
 
     @Test
-    public void testExtractAndSendDataFailure() throws Exception {
-        // Similar setup as above but mock to throw an exception
-        doThrow(new RuntimeException("Database error")).when(dbQueryExecutor).getDataSource();
+    public void testToString() {
+        Vessel vessel = new Vessel();
+        vessel.setRECORD_ID(1);
+        vessel.setVESSEL_NAME("VesselName");
+        vessel.setVESSEL_NUMBER("VesselNumber");
 
-        // Execute the method and expect an exception
-        Exception exception = assertThrows(Exception.class, () -> {
-            extractionService.extractAndSendData("event123", "batch123", EventType.INSERT, "us-east-1");
-        });
+        String expectedString = "Vessel [RECORD_ID=1, RECORD_NUMBER=1, RECORD_TYPE=null, TRACKING_NUMBER=, " +
+                "SEARCH_START_DATE=null, SEARCH_END_DATE=null, VESSEL_NAME=VesselName, VESSEL_NUMBER=VesselNumber, " +
+                "RECORD_DATE=null, RECORD_STATUS=null, RECORD_COUNT=0, PROCESS_START_TIME=null, PROCESS_END_TIME=null, " +
+                "RECORD_ID_FLAG=false, SEARCH_TERM=null, HIST_SEARCH_TERM_WLDCRD=null, HIST_SEARCH_TERM_UNDRSCR=null, " +
+                "HIST_SEARCH_TERM_EXACT=null]";
 
-        // Verify the status update in case of failure
-        verify(logger).updateEventEntryStatus("event123", EventStatus.FAILED);
+        assertEquals(expectedString, vessel.toString());
     }
 }
