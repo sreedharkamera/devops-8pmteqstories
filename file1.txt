@@ -1,98 +1,130 @@
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 
-class ExtractionServiceTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    @Mock
-    private AppConfig config;
+public class AccountTest {
 
-    @Mock
-    private AuditLogService logger;
-
-    @Mock
-    private BucketAccessService bucketAccessService;
-
-    @Mock
-    private DatabaseQueryExecutor dbQueryExecutor;
-
-    @InjectMocks
-    private ExtractionService extractionService;
-
-    @Mock
-    private Connection mockConnection;
-
-    @Mock
-    private PreparedStatement mockPreparedStatement;
-
-    @Mock
-    private ResultSet mockResultSet;
+    private Account account;
 
     @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+    public void setUp() {
+        account = new Account();
     }
 
     @Test
-    void testExtractAndSendDataSuccess() throws Exception {
-        // Arrange
-        String eventId = "event123";
-        String batchId = "batch123";
-        EventType eventType = EventType.INSERT;
-        String region = "US";
-
-        String mockQuery = "SELECT * FROM transactions WHERE batchId = ? AND region = ?";
-
-        when(dbQueryExecutor.getDataSource()).thenReturn(mock(Connection.class));
-        when(mockConnection.prepareStatement(mockQuery)).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true).thenReturn(false);
-        when(mockResultSet.getString(anyString())).thenReturn("2023-09-10");
-
-        when(config.getTargetExportFolderPath()).thenReturn("/tmp/");
-        when(config.getFeedName()).thenReturn("TestFeed");
-        when(config.getFeedNarId()).thenReturn("Nar123");
-        when(config.getTransactionBusinessDateColumnName()).thenReturn("Business_Date");
-        when(config.getTransactionIdentifierColumnName()).thenReturn("Transaction_Identifier");
-        when(config.getRegionColumnName()).thenReturn("Region");
-
-        // Act
-        extractionService.extractAndSendData(eventId, batchId, eventType, region);
-
-        // Assert
-        verify(dbQueryExecutor, times(1)).getDataSource();
-        verify(mockPreparedStatement, times(1)).setString(1, batchId);
-        verify(mockPreparedStatement, times(1)).setString(2, region);
-        verify(mockPreparedStatement, times(1)).executeQuery();
-        verify(logger, times(1)).logAudit(anyString(), eq(EventStatus.SUCCESS));
+    public void testSetAndGetRECORD_ID() {
+        account.setRECORD_ID(123);
+        assertEquals(123, account.getRECORD_ID());
     }
 
     @Test
-    void testExtractAndSendDataFailure() throws Exception {
-        // Arrange
-        String eventId = "event123";
-        String batchId = "batch123";
-        EventType eventType = EventType.INSERT;
-        String region = "US";
+    public void testSetAndGetRECORD_NUMBER() {
+        account.setRECORD_NUMBER(5);
+        assertEquals(5, account.getRECORD_NUMBER());
+    }
 
-        String mockQuery = "SELECT * FROM transactions WHERE batchId = ? AND region = ?";
+    @Test
+    public void testSetAndGetRECORD_TYPE() {
+        account.setRECORD_TYPE("Type1");
+        assertEquals("Type1", account.getRECORD_TYPE());
+    }
 
-        when(dbQueryExecutor.getDataSource()).thenReturn(mock(Connection.class));
-        when(mockConnection.prepareStatement(mockQuery)).thenThrow(new RuntimeException("Database error"));
+    @Test
+    public void testSetAndGetTRACKING_NUMBER() {
+        account.setTRACKING_NUMBER("TN123");
+        assertEquals("TN123", account.getTRACKING_NUMBER());
+    }
 
-        // Act & Assert
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            extractionService.extractAndSendData(eventId, batchId, eventType, region);
-        });
+    @Test
+    public void testSetAndGetSEARCH_START_DATE() {
+        account.setSEARCH_START_DATE("2024-01-01");
+        assertEquals("2024-01-01", account.getSEARCH_START_DATE());
+    }
 
-        verify(logger, times(1)).logAudit(anyString(), eq(EventStatus.FAILED));
-        assertEquals("Database error", exception.getMessage());
+    @Test
+    public void testSetAndGetSEARCH_END_DATE() {
+        account.setSEARCH_END_DATE("2024-12-31");
+        assertEquals("2024-12-31", account.getSEARCH_END_DATE());
+    }
+
+    @Test
+    public void testSetAndGetACCOUNT_NUMBER() {
+        account.setACCOUNT_NUMBER("ACC123");
+        assertEquals("ACC123", account.getACCOUNT_NUMBER());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_DATE() {
+        account.setRECORD_DATE("2024-10-23");
+        assertEquals("2024-10-23", account.getRECORD_DATE());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_STATUS() {
+        account.setRECORD_STATUS("Active");
+        assertEquals("Active", account.getRECORD_STATUS());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_COUNT() {
+        account.setRECORD_COUNT(10);
+        assertEquals(10, account.getRECORD_COUNT());
+    }
+
+    @Test
+    public void testSetAndGetPROCESS_START_TIME() {
+        account.setPROCESS_START_TIME("10:00 AM");
+        assertEquals("10:00 AM", account.getPROCESS_START_TIME());
+    }
+
+    @Test
+    public void testSetAndGetPROCESS_END_TIME() {
+        account.setPROCESS_END_TIME("11:00 AM");
+        assertEquals("11:00 AM", account.getPROCESS_END_TIME());
+    }
+
+    @Test
+    public void testSetAndGetRECORD_ID_FLAG() {
+        account.setRECORD_ID_FLAG(true);
+        assertTrue(account.isRECORD_ID_FLAG());
+    }
+
+    @Test
+    public void testSetAndGetSEARCH_TERM() {
+        account.setSEARCH_TERM("Search");
+        assertEquals("Search", account.getSEARCH_TERM());
+    }
+
+    @Test
+    public void testEquals() {
+        Account anotherAccount = new Account();
+        anotherAccount.setRECORD_ID(1);
+        account.setRECORD_ID(1);
+        assertEquals(account, anotherAccount);
+    }
+
+    @Test
+    public void testNotEquals() {
+        Account anotherAccount = new Account();
+        anotherAccount.setRECORD_ID(2);
+        account.setRECORD_ID(1);
+        assertNotEquals(account, anotherAccount);
+    }
+
+    @Test
+    public void testHashCode() {
+        account.setRECORD_ID(1);
+        account.setACCOUNT_NUMBER("ACC123");
+        int expectedHashCode = Objects.hash(1, "ACC123", "", 1, "", "", 0, "", "", "", false, "", "");
+        assertEquals(expectedHashCode, account.hashCode());
+    }
+
+    @Test
+    public void testToString() {
+        account.setRECORD_ID(1);
+        account.setACCOUNT_NUMBER("ACC123");
+        String expectedString = "Account [RECORD_ID=1, RECORD_NUMBER=1, RECORD_TYPE=null, TRACKING_NUMBER=, SEARCH_START_DATE=null, SEARCH_END_DATE=null, ACCOUNT_NUMBER=ACC123, RECORD_DATE=null, RECORD_STATUS=null, RECORD_COUNT=0, PROCESS_START_TIME=null, PROCESS_END_TIME=null, RECORD_ID_FLAG=false, SEARCH_TERM=null]";
+        assertEquals(expectedString, account.toString());
     }
 }
